@@ -7,18 +7,8 @@ use App\Http\Controllers\BookingController;
 use App\Http\Controllers\Admin\RoomController as AdminRoomController;
 use App\Http\Controllers\Admin\BookingController as AdminBookingController;
 use App\Models\Booking; // Import the Booking model
+use App\Models\Room;
 use Carbon\Carbon; // Import Carbon
-
-/*
-|--------------------------------------------------------------------------
-| Web Routes
-|--------------------------------------------------------------------------
-|
-| Here is where you can register web routes for your application. These
-| routes are loaded by the RouteServiceProvider within a group which
-| contains the "web" middleware group. Now create something great!
-|
-*/
 
 Route::get('/', function () {
     return view('welcome');
@@ -122,7 +112,30 @@ Route::middleware(['auth', 'verified'])->group(function () {
             $previousMonthDate = $date->copy()->subMonth();
             $nextMonthDate = $date->copy()->addMonth();
 
-            return view('admin.dashboard', compact('bookings', 'calendar', 'bookedDays', 'date', 'previousMonthDate', 'nextMonthDate'));
+            $totalRooms = Room::count();
+            $totalApprovedThisMonth = Booking::where('status', 'approved')
+                ->whereMonth('start_time', $date->month)
+                ->whereYear('start_time', $date->year)
+                ->count();
+            $pendingRequestsCount = Booking::where('status', 'pending')->count();
+            $pendingBookings = Booking::with(['room', 'user'])
+                ->where('status', 'pending')
+                ->latest()
+                ->take(5)
+                ->get();
+
+            return view('admin.dashboard', compact(
+                'bookings',
+                'calendar',
+                'bookedDays',
+                'date',
+                'previousMonthDate',
+                'nextMonthDate',
+                'totalRooms',
+                'totalApprovedThisMonth',
+                'pendingRequestsCount',
+                'pendingBookings'
+            ));
         })->name('dashboard');
 
         Route::resource('rooms', AdminRoomController::class);

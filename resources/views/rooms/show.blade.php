@@ -116,10 +116,10 @@
                         </div>
 
                         <div>
-                            <label for="purpose" class="block text-sm font-medium text-gray-700 mb-1">Meeting Purpose</label>
+                            <label for="purpose" class="block text-sm font-medium text-gray-700 mb-1"> Purpose</label>
                             <textarea id="purpose" name="purpose" rows="3" 
                                       class="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 text-sm resize-none" 
-                                      placeholder="Briefly describe the purpose of your meeting..." required>{{ old('purpose') }}</textarea>
+                                      placeholder="Briefly describe the purpose of your reservation..." required>{{ old('purpose') }}</textarea>
                         </div>
 
                         <div class="pt-3">

@@ -16,16 +16,6 @@ Sistem Booking Ruangan Kampus, aplikasi berbasis web yang memungkinkan mahasiswa
 ---
 
 
-## 🎨 Style
-Dasar menggunakan hitam dan putih agar tampilan bersih. Kuning dan biru dipakai sebagai aksen ringan.
-
-**Palette**
-- Hitam: `#000000`
-- Putih: `#FFFFFF`
-- Kuning Aksen: `#F9D342`
-- Biru Aksen: `#3A7BFF`
-
-
 ## 👥 Role Pengguna
 
 ### 1. Admin
