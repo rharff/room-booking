@@ -2,24 +2,33 @@ pipeline {
     agent any
 
     environment {
-        DOCKER_IMAGE_NAME = "your-dockerhub-username/your-app-name"
-        DOCKER_IMAGE_TAG  = "latest"
-        DOCKER_REGISTRY_CREDENTIALS_ID = "dockerhub-credentials" // Change this to your Docker Hub credentials ID in Jenkins
+        REGISTRY        = "docker.io"
+        IMAGE_NAME      = "rhan33/laravel-room-booking"
+        IMAGE_TAG       = "${env.GIT_COMMIT}"
+        DOCKER_CREDS    = "dckr_pat_UNBKExsXZKCqDGWFItJBZFYwh9Y"
+    }
+
+    options {
+        timestamps()
+        disableConcurrentBuilds()
     }
 
     stages {
+
         stage('Checkout') {
             steps {
-                // Get some code from a GitHub repository
-                git 'https://github.com/your-username/your-repo-name.git' // Change this to your repository
+                checkout scm
             }
         }
 
-        stage('Build') {
+        stage('Build Image') {
             steps {
                 script {
-                    echo "Building the Docker image..."
-                    sh "docker build -t ${DOCKER_IMAGE_NAME}:${DOCKER_IMAGE_TAG} ."
+                    sh """
+                      docker build \
+                        -t ${IMAGE_NAME}:${IMAGE_TAG} \
+                        .
+                    """
                 }
             }
         }
@@ -27,30 +36,23 @@ pipeline {
         stage('Test') {
             steps {
                 script {
-                    echo "Running tests..."
-                    sh "docker run --rm -v ${pwd()}:/var/www/html ${DOCKER_IMAGE_NAME}:${DOCKER_IMAGE_TAG} vendor/bin/phpunit"
+                    sh """
+                      docker run --rm \
+                        ${IMAGE_NAME}:${IMAGE_TAG} \
+                        php artisan test
+                    """
                 }
             }
         }
 
-        stage('Push') {
+        stage('Push Image') {
             steps {
                 script {
-                    echo "Pushing the Docker image..."
-                    withCredentials([string(credentialsId: DOCKER_REGISTRY_CREDENTIALS_ID, variable: 'DOCKER_HUB_PASSWORD')]) {
-                        sh "echo ${DOCKER_HUB_PASSWORD} | docker login -u your-dockerhub-username --password-stdin"
-                        sh "docker push ${DOCKER_IMAGE_NAME}:${DOCKER_IMAGE_TAG}"
+                    docker.withRegistry("https://${REGISTRY}", DOCKER_CREDS) {
+                        sh "docker push ${IMAGE_NAME}:${IMAGE_TAG}"
+                        sh "docker tag ${IMAGE_NAME}:${IMAGE_TAG} ${IMAGE_NAME}:latest"
+                        sh "docker push ${IMAGE_NAME}:latest"
                     }
-                }
-            }
-        }
-
-        stage('Deploy') {
-            steps {
-                script {
-                    echo "Deploying the application..."
-                    // Add your deployment steps here
-                    // For example, you might use kubectl, docker-compose, or ssh to deploy your application
                 }
             }
         }
@@ -58,11 +60,14 @@ pipeline {
 
     post {
         always {
-            echo 'Pipeline finished.'
-            script {
-                // Clean up Docker images
-                sh "docker rmi ${DOCKER_IMAGE_NAME}:${DOCKER_IMAGE_TAG}"
-            }
+            echo "Pipeline finished"
+            sh "docker image prune -f || true"
+        }
+        success {
+            echo "Build & Deploy successful 🚀"
+        }
+        failure {
+            echo "Pipeline failed ❌"
         }
     }
 }
