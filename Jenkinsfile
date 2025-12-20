@@ -49,7 +49,7 @@ pipeline {
             git remote set-url origin \
               https://${GIT_USER}:${GIT_TOKEN}@github.com/rharff/room-booking.git
 
-            git push origin main
+            git push origin HEAD:main
           '''
         }
       }
