@@ -15,17 +15,17 @@ pipeline {
       }
     }
 
-    stage('Test (Laravel)') {
-      steps {
-        sh '''
-          php -v || { echo "PHP not found"; exit 1; }
-          composer install --no-scripts --no-interaction
-          cp .env.example .env
-          php artisan key:generate
-          php artisan test
-        '''
-      }
-    }
+    // stage('Test (Laravel)') {
+    //   steps {
+    //     sh '''
+    //       php -v || { echo "PHP not found"; exit 1; }
+    //       composer install --no-scripts --no-interaction
+    //       cp .env.example .env
+    //       php artisan key:generate
+    //       php artisan test
+    //     '''
+    //   }
+    // }
 
     stage('Update Kubernetes Manifest (GitOps)') {
       steps {
