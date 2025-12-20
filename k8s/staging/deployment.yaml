@@ -3,8 +3,6 @@ kind: Deployment
 metadata:
   name: room-booking
   namespace: staging-app
-  labels:
-    app: room-booking
 spec:
   replicas: 2
   selector:
@@ -21,34 +19,24 @@ spec:
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 80
+
           env:
-            - name: APP_ENV
-              value: "staging"
-            - name: APP_DEBUG
-              value: "false"
             - name: APP_KEY
-              value: "base64:your_generated_key_here"
-            - name: DB_CONNECTION
-              value: "sqlite"
-            - name: DB_DATABASE
-              value: "/var/www/html/database/database.sqlite"
-            - name: SESSION_DRIVER
-              value: "file"
-            - name: CACHE_STORE
-              value: "file"
-            - name: QUEUE_CONNECTION
-              value: "sync"
+              valueFrom:
+                secretKeyRef:
+                  name: room-booking-secret
+                  key: APP_KEY
 
           livenessProbe:
             httpGet:
-              path: /
+              path: /health
               port: 80
             initialDelaySeconds: 30
             periodSeconds: 10
 
           readinessProbe:
             httpGet:
-              path: /
+              path: /health
               port: 80
-            initialDelaySeconds: 5
+            initialDelaySeconds: 10
             periodSeconds: 5
