@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
         - name: room-booking
-          image: rhan33/room-booking:staging-12
+          image: rhan33/room-booking:staging-16
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 80
