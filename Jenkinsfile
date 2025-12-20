@@ -15,47 +15,15 @@ pipeline {
       }
     }
 
-    stage('Test') {
+    stage('Test (Laravel)') {
       steps {
         sh '''
-          docker run --rm \
-            -v $(pwd):/app \
-            -w /app \
-            composer:2 bash -c "
-              composer install --no-scripts --no-interaction
-              cp .env.example .env
-              php artisan key:generate
-              php artisan test
-            "
+          php -v || { echo "PHP not found"; exit 1; }
+          composer install --no-scripts --no-interaction
+          cp .env.example .env
+          php artisan key:generate
+          php artisan test
         '''
-      }
-    }
-
-    stage('Build Docker Image') {
-      steps {
-        sh '''
-          docker build \
-            -t ${FULL_IMAGE} \
-            -f Dockerfile \
-            .
-        '''
-      }
-    }
-
-    stage('Push Image to DockerHub') {
-      steps {
-        withCredentials([
-          usernamePassword(
-            credentialsId: 'dockerhub',
-            usernameVariable: 'DOCKER_USER',
-            passwordVariable: 'DOCKER_PASS'
-          )
-        ]) {
-          sh '''
-            echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
-            docker push ${FULL_IMAGE}
-          '''
-        }
       }
     }
 
@@ -90,13 +58,10 @@ pipeline {
 
   post {
     success {
-      echo "✅ Successfully built and deployed ${FULL_IMAGE}"
+      echo "✅ Manifest updated → ArgoCD will deploy ${FULL_IMAGE}"
     }
     failure {
       echo "❌ Pipeline failed"
-    }
-    always {
-      sh 'docker logout || true'
     }
   }
 }
