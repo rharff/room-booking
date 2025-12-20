@@ -40,8 +40,8 @@ pipeline {
             sed -i "s|image: .*|image: ${FULL_IMAGE}|" \
               k8s/staging/deployment.yaml
 
-            git config user.name "jenkins"
-            git config user.email "jenkins@ci.local"
+            git config user.name "rharff"
+            git config user.email "rharff@gmail.com"
 
             git add k8s/staging/deployment.yaml
             git commit -m "ci: deploy staging ${IMAGE_TAG}" || echo "No changes to commit"
