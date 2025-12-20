@@ -14,7 +14,7 @@ RUN npm run build
 # --------------------
 FROM php:8.2-apache
 
-# System deps + PHP extensions (IMPORTANT)
+# System deps + PHP extensions
 RUN apt-get update && apt-get install -y \
     libzip-dev \
     zip \
@@ -39,17 +39,22 @@ WORKDIR /var/www/html
 # Install Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
-# Install PHP deps first (cache-friendly)
+# --- FIX START ---
+# 1. Install PHP deps WITHOUT scripts (avoids the "missing artisan" error)
 COPY composer.json composer.lock ./
-RUN composer install --no-dev --optimize-autoloader --no-interaction
+RUN composer install --no-dev --optimize-autoloader --no-interaction --no-scripts
 
-# Copy application code
+# 2. Copy the actual application code (including artisan)
 COPY . .
+
+# 3. Now that the code is present, finish the composer dump and run scripts
+RUN composer dump-autoload --optimize --no-dev
+# --- FIX END ---
 
 # Copy frontend build output
 COPY --from=build /app/public/build ./public/build
 
-# Create SQLite database (CRITICAL)
+# Create SQLite database
 RUN mkdir -p database \
  && touch database/database.sqlite \
  && chown -R www-data:www-data database storage bootstrap/cache
