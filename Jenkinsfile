@@ -8,24 +8,42 @@ pipeline {
   }
 
   stages {
-
     stage('Checkout') {
       steps {
         checkout scm
       }
     }
 
-    // stage('Test (Laravel)') {
-    //   steps {
-    //     sh '''
-    //       php -v || { echo "PHP not found"; exit 1; }
-    //       composer install --no-scripts --no-interaction
-    //       cp .env.example .env
-    //       php artisan key:generate
-    //       php artisan test
-    //     '''
-    //   }
-    // }
+    stage('Build and Push to Docker Hub') {
+      steps {
+        // Ensure you have created credentials in Jenkins with ID 'dockerhub'
+        withCredentials([
+          usernamePassword(
+            credentialsId: 'dockerhub',
+            usernameVariable: 'DOCKER_USER',
+            passwordVariable: 'DOCKER_PASS'
+          )
+        ]) {
+          sh '''
+            # Login to Docker Hub
+            echo "${DOCKER_PASS}" | docker login -u "${DOCKER_USER}" --password-stdin
+
+            # Build the Docker image
+            docker build -t ${FULL_IMAGE} .
+            
+            # Also tag it as 'latest' for convenience
+            docker tag ${FULL_IMAGE} ${IMAGE_NAME}:${IMAGE_TAG}
+
+            # Push both tags
+            docker push ${FULL_IMAGE}
+            docker push ${IMAGE_NAME}:${IMAGE_TAG}
+
+            # Clean up local images to save disk space on the Jenkins agent
+            docker rmi ${FULL_IMAGE} ${IMAGE_NAME}:${IMAGE_TAG}
+          '''
+        }
+      }
+    }
 
     stage('Update Kubernetes Manifest (GitOps)') {
       steps {
@@ -37,6 +55,7 @@ pipeline {
           )
         ]) {
           sh '''
+            # Update the image tag in the deployment manifest
             sed -i "s|image: .*|image: ${FULL_IMAGE}|" \
               k8s/staging/deployment.yaml
 
@@ -46,6 +65,7 @@ pipeline {
             git add k8s/staging/deployment.yaml
             git commit -m "ci: deploy staging ${IMAGE_TAG}" || echo "No changes to commit"
 
+            # Set the remote URL with credentials for pushing
             git remote set-url origin \
               https://${GIT_USER}:${GIT_TOKEN}@github.com/rharff/room-booking.git
 
@@ -58,7 +78,7 @@ pipeline {
 
   post {
     success {
-      echo "✅ Manifest updated → ArgoCD will deploy ${FULL_IMAGE}"
+      echo "✅ Image pushed and Manifest updated → ArgoCD will deploy ${FULL_IMAGE}"
     }
     failure {
       echo "❌ Pipeline failed"
