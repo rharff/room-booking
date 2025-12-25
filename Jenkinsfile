@@ -3,10 +3,11 @@ pipeline {
 
     environment {
         // Ubah bagian ini
-        APP_NAME        = 'room-booking-app' // sesuaikan dengan nama aplikasi anda
+        // sesuaikan dengan nama aplikasi anda begitu juga credentialnya
+        APP_NAME        = 'room-booking' 
         DOCKER_IMAGE    = "diwamln/${APP_NAME}"
-        DOCKER_CREDS    = 'docker-hub' // sesuaikan dengan credential yang telah di-set
-        GIT_CREDS       = 'git-token' // PAT classic github
+        REGISTRY_ID     = 'docker-hub'
+        GIT_ID       = 'git-token'
         MANIFEST_REPO   = 'github.com/DevopsNaratel/deployment-manifests'
     }
 
@@ -24,7 +25,7 @@ pipeline {
         stage('Build & Push') {
             steps {
                 script {
-                    docker.withRegistry('', DOCKER_CREDS) {
+                    docker.withRegistry('', REGISTRY_ID) {
                         def appImage = docker.build("${DOCKER_IMAGE}:${env.BASE_TAG}")
                         appImage.push()
                         appImage.push('latest')
@@ -59,7 +60,7 @@ def updateManifest(envName, filePath) {
     echo "Updating ${envName} manifest..."
     sh "rm -rf temp_manifests_${envName}"
     dir("temp_manifests_${envName}") {
-        withCredentials([usernamePassword(credentialsId: env.GIT_CREDS, usernameVariable: 'GIT_USER', passwordVariable: 'GIT_PASS')]) {
+        withCredentials([usernamePassword(credentialsId: env.GIT_ID, usernameVariable: 'GIT_USER', passwordVariable: 'GIT_PASS')]) {
             sh "git clone https://${GIT_USER}:${GIT_PASS}@${env.MANIFEST_REPO} ."
             sh "sed -i -E 's|image: .*:.*|image: docker.io/${env.DOCKER_IMAGE}:${env.BASE_TAG}|g' ${filePath}"
             sh """
